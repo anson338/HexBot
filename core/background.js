@@ -12,11 +12,11 @@
 	@return: It returns an object {response: "response of the synchronous request (or null)", xmlhttp: "xmlhttp objectss"} 
 */
 function sendXMLHttpRequestMod(script_target, method, parameters, isAsynchronous, function_callback, sendXRequestedWithHeader){
-	var xmlhttp = new XMLHttpRequest()
-	var synchronousResponse = null
-	xmlhttp.onreadystatechange = function() {
+	const xmlhttp = new XMLHttpRequest();
+	let synchronousResponse = null;
+	xmlhttp.onreadystatechange = () => {
 		if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-			var result = xmlhttp.responseText
+			const result = xmlhttp.responseText;
 			if (isAsynchronous){
 				function_callback(result)
 			} else {
@@ -34,7 +34,7 @@ function sendXMLHttpRequestMod(script_target, method, parameters, isAsynchronous
 			xmlhttp.send(parameters)
 			break
 		case "GET":
-			xmlhttp.open("GET", script_target + "?" + parameters, isAsynchronous)
+			xmlhttp.open("GET", `${script_target}?${parameters}`, isAsynchronous)
 			xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=UTF-8")
 			xmlhttp.setRequestHeader("Accept", "*/*")
 			if (sendXRequestedWithHeader)
@@ -43,54 +43,54 @@ function sendXMLHttpRequestMod(script_target, method, parameters, isAsynchronous
 			break
 		default: break	
 	}
-	return {response: synchronousResponse, xmlhttp: xmlhttp}
+	return {response: synchronousResponse, xmlhttp}
 }
 
-var storage = []
+const storage = [];
 
 //It sends messages to content script
 function respond(request, tabId){
-	chrome.tabs.sendMessage(tabId, {message: request}, function(response) {console.log(response.backMessage)})
+	chrome.tabs.sendMessage(tabId, {message: request}, response => {console.log(response.backMessage)})
 }
 
 //It process requests comming from content script
 chrome.runtime.onMessage.addListener(
- 	function(request, sender, sendResponse){
+ 	(request, sender, sendResponse) => {
  		var request = request.message
 		switch(request.action){
 			case "get":
 				sendResponse({backMessage: "GET request received by background script"})
 				respond(storage[request.item], sender.tab.id)
-				console.log("GET request processed. Data sent (\"" + request.item + "\")", storage[request.item])
+				console.log(`GET request processed. Data sent ("${request.item}")`, storage[request.item])
 				break	
 			case "set":
 				sendResponse({backMessage: "SET request received by background script"})
 				storage[request.item] = request.data
-				console.log("SET request processed. Data stored (\"" + request.item + "\")")
+				console.log(`SET request processed. Data stored ("${request.item}")`)
 				break
 			case "reset":
 				sendResponse({backMessage: "RESET request received by background script"})
 				storage[request.item] = null
-				console.log("RESET request processed. Item removed (\"" + request.item + "\")")
+				console.log(`RESET request processed. Item removed ("${request.item}")`)
 				break
 			case "sendmessage":
 				sendResponse({backMessage: "Request received"})
-				var requestobj = sendXMLHttpRequestMod(request.target, "GET", request.data, true, function(response, xmlhttp){
+				var requestobj = sendXMLHttpRequestMod(request.target, "GET", request.data, true, (response, xmlhttp) => {
 					response = response.split("%END%")[0]
 					respond(response, sender.tab.id)
 				}, false)
-				setTimeout(function(){
+				setTimeout(() => {
 					requestobj.xmlhttp.abort();
 					respond(null, sender.tab.id);
 				}, 3000);
 				break
 			case "getneworders":
 				sendResponse({backMessage: "Request received"})
-				var requestobj = sendXMLHttpRequestMod(request.target, "GET", "", true, function(response, xmlhttp){
+				var requestobj = sendXMLHttpRequestMod(request.target, "GET", "", true, (response, xmlhttp) => {
 					response = response.split("%END%")[0]
 					respond(response, sender.tab.id)
 				}, false);
-				setTimeout(function(){
+				setTimeout(() => {
 					requestobj.xmlhttp.abort()
 					respond("//Nothing to pass", sender.tab.id);
 				}, 3000);
